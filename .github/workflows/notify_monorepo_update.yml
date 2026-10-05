@@ -1,0 +1,65 @@
+name: Notify Monorepo
+
+# Tells OptimCE/monorepo that this submodule moved, so it can bump the gitlink.
+#
+# ===========================================================================
+# ADD THIS ONE LAST - after `git submodule add` has written a real gitlink in
+# the monorepo (mode 160000). The monorepo's receiver runs
+# `git submodule update --remote --merge live-data`; fired before the gitlink
+# exists, that turns the MONOREPO's job red on every push here, while this
+# repository's own check stays green. Hand-editing .gitmodules does not
+# substitute for the gitlink.
+#
+# THE DIVERGENCE FROM THE SIBLINGS IS DELIBERATE. Theirs is a bare
+# `curl -X POST` with no `-f`, so a missing or expired MONOREPO_TOKEN returns
+# 401 while curl exits 0 and the check goes green.
+#
+# And it is quieter than that. On a 401 GitHub never creates the event, so the
+# monorepo's receiver - whose only trigger is `repository_dispatch: types:
+# [submodule-updated]` - never runs either. There is no red check ANYWHERE.
+# The submodule pointer simply stops advancing, and the first symptom is the
+# monorepo deploying a months-old commit of this service.
+#
+# This one checks the status.
+#
+# The token is passed through `env:` rather than interpolated into the script
+# body, so it is never part of the command text.
+# ===========================================================================
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  notify:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+      - name: Send repository dispatch
+        env:
+          MONOREPO_TOKEN: ${{ secrets.MONOREPO_TOKEN }}
+        run: |
+          if [ -z "${MONOREPO_TOKEN}" ]; then
+            echo "::error::MONOREPO_TOKEN is not set. Add a repository secret holding a token with write access to OptimCE/monorepo."
+            exit 1
+          fi
+
+          status=$(curl -sS -o /tmp/dispatch.out -w '%{http_code}' -X POST \
+            -H "Authorization: Bearer ${MONOREPO_TOKEN}" \
+            -H "Accept: application/vnd.github+json" \
+            -H "X-GitHub-Api-Version: 2022-11-28" \
+            https://api.github.com/repos/OptimCE/monorepo/dispatches \
+            -d '{"event_type":"submodule-updated","client_payload":{"repo":"live-data"}}')
+
+          # A successful dispatch is 204 No Content. Anything else is a failure
+          # this job must show, not swallow.
+          if [ "${status}" != "204" ]; then
+            echo "::error::repository_dispatch to OptimCE/monorepo returned HTTP ${status}"
+            cat /tmp/dispatch.out
+            exit 1
+          fi
+
+          echo "dispatched submodule-updated (HTTP 204)"
