@@ -1,0 +1,46 @@
+name: Lint
+
+# The sibling annexes' lint.yml, unchanged except for this header - strip these
+# comment lines and the md5 matches all seven. Do not "improve" it here: seven
+# repositories run the identical file, and a local variant is how they drift.
+#
+# Three gates, not two, and NEITHER ruff subcommand subsumes the other. Both
+# directions were measured against this repo's own pyproject.toml:
+#
+#   a 110-character line -> `ruff check` reports E501; `ruff format --check`
+#                           says "already formatted"
+#   a = 'x'; b = [1,2,3] -> `ruff check` says "All checks passed";
+#                           `ruff format --check` says "Would reformat"
+#
+# So line length is a lint rule here, and quoting/spacing is not. Dropping
+# either gate loses real coverage.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: requirements/all.txt
+
+      - run: pip install -r requirements/all.txt
+
+      - name: Ruff lint
+        run: ruff check .
+
+      - name: Ruff format check
+        run: ruff format --check .
+
+      - name: Mypy
+        run: mypy .

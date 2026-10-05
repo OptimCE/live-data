@@ -1,0 +1,16 @@
+-r base.txt
+
+# HTTP framework
+fastapi==0.115.6
+uvicorn[standard]==0.32.1
+
+# Server-side QR rendering for the enrolment token (plan §8.3). segno is pure
+# Python with ZERO dependencies and writes SVG directly; `qrcode` would drag in
+# Pillow to do the same job.
+#
+# In api.txt and NOT base.txt, so it stays out of the worker image — the worker
+# has no reason to render anything. Note the chain makes it visible to pytest
+# anyway (base <- api <- development <- testing); worker.txt is the separate
+# leaf, which is exactly why a worker-only dependency would ALSO need pinning in
+# testing.txt to be testable at all.
+segno==1.6.1

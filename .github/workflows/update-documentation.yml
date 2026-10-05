@@ -1,0 +1,180 @@
+name: Update OpenAPI documentation
+
+# ===========================================================================
+# TWO SPECS, NOT ONE - and that is the whole divergence from the siblings.
+#
+# Every other annexe runs `export_openapi.py docs/openapi.json`, producing one
+# merged document. live-data must not: it is the only service with two
+# deliberately disjoint surfaces, and `--split` is what enforces that. The
+# single-file path runs NONE of the split's guards - including the assertion
+# that the public operation set EQUALS `PUBLIC_OPERATIONS` in
+# api/live_public/routes.py, which exists precisely to stop an authenticated
+# route reaching the public document.
+#
+# Copied verbatim from a sibling, this workflow would publish
+#
+#     /version  /devices(GET,POST)  /token  /revoke  +  POST /enroll
+#
+# as one page, silently discarding the boundary the gateway's two KrakenD
+# service entries are built on. Not an auth bypass - the gateway still guards
+# those routes - but the design would be thrown away in the one artefact
+# external implementers actually read.
+#
+# BEFORE THIS CAN PASS: GitHub Pages must be enabled by hand, with
+# Settings -> Pages -> Source = "GitHub Actions". `configure-pages` defaults
+# `enablement: false` and cannot turn it on with GITHUB_TOKEN, so on a repo
+# where Pages was never enabled this job dies at step 4 - before Python is ever
+# invoked, which makes the error look unrelated to documentation.
+# ===========================================================================
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+    paths-ignore:
+      - docs/**
+
+jobs:
+  build-and-deploy:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: write
+      pages: write
+      id-token: write
+
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Setup Node
+        uses: actions/setup-node@v6
+        with:
+          node-version: 22
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v6
+
+      - name: Install Python dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements/all.txt
+          # PyYAML is only ever a TRANSITIVE dependency here - nothing in
+          # requirements/ pins it. The siblings rely on that too; this job
+          # would fail on the conversion step the day it stops arriving.
+          pip install pyyaml
+
+      - name: Export both OpenAPI specs
+        env:
+          # Import-time only. Nothing connects: the exporter builds the app and
+          # reads app.openapi(). Any well-formed URL will do.
+          CRM_DATABASE_URL: "postgresql+asyncpg://user:pass@localhost/dummy"
+          LOCAL_DATABASE_URL: "postgresql+asyncpg://user:pass@localhost/dummy"
+        run: |
+          mkdir -p docs
+          python scripts/export_openapi.py --split docs/live.json docs/live-public.json
+
+      - name: Convert JSON to YAML
+        run: |
+          python - <<'PY'
+          import json
+          import yaml
+
+          for name in ("live", "live-public"):
+              with open(f"docs/{name}.json", encoding="utf-8") as handle:
+                  spec = json.load(handle)
+              with open(f"docs/{name}.yml", "w", encoding="utf-8") as handle:
+                  yaml.safe_dump(spec, handle, sort_keys=False)
+              print(f"{name}: {len(spec['paths'])} path(s)")
+          PY
+
+      - name: Generate Redoc HTML
+        # PINNED, unlike the siblings, which run a bare `npx @redocly/cli`.
+        # 2.53.1 prints a deprecation notice saying an upcoming release will
+        # render with Redoc 3 instead of Redoc 2 - a different page, arriving
+        # with no diff, on a day nobody chose. FIVE annexes run it unpinned
+        # (administrative-document, allocation-key-generation, billing,
+        # news-board, simulation-key) and will all switch on the same day.
+        # Same reasoning as requirements/base.txt pinning paho-mqtt by hand
+        # rather than letting it resolve.
+        run: |
+          npx @redocly/cli@2.53.1 build-docs docs/live-public.yml -o docs/enrolment.html
+          npx @redocly/cli@2.53.1 build-docs docs/live.yml        -o docs/admin.html
+
+      - name: Landing page
+        # Redoc emits one standalone page per spec with no navigation between
+        # them, so without this the second document is unreachable.
+        run: |
+          cat > docs/index.html <<'HTML'
+          <!doctype html>
+          <html lang="en">
+          <head>
+            <meta charset="utf-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1">
+            <title>OptimCE Live Data — API documentation</title>
+            <style>
+              :root { color-scheme: light dark; }
+              body { font: 16px/1.6 system-ui, sans-serif; max-width: 46rem;
+                     margin: 4rem auto; padding: 0 1.5rem; }
+              h1 { font-size: 1.6rem; margin-bottom: .25rem; }
+              p.lede { color: #666; margin-top: 0; }
+              a.card { display: block; border: 1px solid #8884; border-radius: .5rem;
+                       padding: 1rem 1.25rem; margin: 1rem 0; text-decoration: none;
+                       color: inherit; }
+              a.card:hover { border-color: #888; }
+              a.card b { display: block; font-size: 1.05rem; }
+              a.card span { color: #666; font-size: .93rem; }
+              footer { margin-top: 3rem; font-size: .88rem; color: #777; }
+              code { font-size: .9em; }
+            </style>
+          </head>
+          <body>
+            <h1>OptimCE Live Data</h1>
+            <p class="lede">MQTT telemetry ingestion for smart meters.</p>
+
+            <p>This service exposes <strong>two deliberately disjoint surfaces</strong>.
+               They are separate documents because they are separately authenticated:
+               the gateway gates its JWT validator per service entry, never per
+               endpoint.</p>
+
+            <a class="card" href="enrolment.html">
+              <b>Enrolment API — public</b>
+              <span><code>POST /live-public/enroll</code>. Unauthenticated, called once
+              by a device holding a one-time token. This is the one connector authors
+              need.</span>
+            </a>
+
+            <a class="card" href="admin.html">
+              <b>Device administration — authenticated</b>
+              <span>Create, list, re-token and revoke devices. Requires a community
+              manager session through the gateway.</span>
+            </a>
+
+            <footer>
+              The MQTT wire protocol itself is not described here: it is frozen at
+              <code>v1</code> and documented in the OptimCE monorepo as
+              <code>docs/live-data-protocol.md</code>.
+            </footer>
+          </body>
+          </html>
+          HTML
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v5
+        with:
+          path: docs
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v5

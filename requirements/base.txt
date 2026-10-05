@@ -1,0 +1,60 @@
+# Core framework
+sqlalchemy[asyncio]==2.0.36
+asyncpg==0.30.0
+
+# Pydantic
+pydantic==2.10.3
+pydantic-settings==2.6.1
+
+# MQTT. Lives in base.txt because BOTH processes need it: the worker to ingest
+# telemetry, the API to drive the broker's dynamic-security control topic.
+#
+# PINNED BELOW 3 ON PURPOSE. aiomqtt v3 is the only version exposing a manual
+# `client.puback()`, and it is alpha and MQTTv5-ONLY — while protocol §1 freezes
+# devices at MQTT 3.1.1 ("not MQTT 5 — the ESP32 firmwares must not need it").
+# So on 2.x paho PUBACKs every QoS-1 message the instant it is handed over,
+# BEFORE any database write. There is no ack to withhold and no redelivery, and
+# worker/ingest.py is built around that rather than against it. Read its module
+# docstring before moving this pin.
+#
+# paho-mqtt is aiomqtt's transport and is pinned explicitly rather than left to
+# resolution: pytest runs under `filterwarnings = ["error::DeprecationWarning"]`,
+# so a DeprecationWarning from either library at import or connect time fails the
+# WHOLE suite, and an unpinned transitive is how that arrives without a diff.
+aiomqtt==2.5.1
+paho-mqtt==2.1.0
+
+# Logging
+python-json-logger==3.2.0
+
+opentelemetry-api==1.39.1
+opentelemetry-exporter-otlp-proto-common==1.39.1
+opentelemetry-exporter-otlp-proto-grpc==1.39.1
+opentelemetry-exporter-otlp-proto-http==1.39.1
+opentelemetry-instrumentation==0.60b1
+opentelemetry-instrumentation-asgi==0.60b1
+opentelemetry-instrumentation-fastapi==0.60b1
+opentelemetry-instrumentation-sqlalchemy==0.60b1
+opentelemetry-proto==1.39.1
+opentelemetry-sdk==1.39.1
+opentelemetry-semantic-conventions==0.60b1
+opentelemetry-util-http==0.60b1
+
+# DELIBERATELY ABSENT, each for a reason worth keeping:
+#
+#   nats-py      — this service has no NATS (plan §4). Nothing publishes and
+#                  nothing consumes; wiring it would make /health/readiness fail
+#                  closed on a broker the service does not use. The subject space
+#                  `optimce.live.>` is reserved in shared/const.py.
+#   redis        — no realtime hints in phase 1. An envelope is a hint, never
+#                  data, and at 15-minute granularity a push can only say
+#                  "refetch" — which the client already does on its poll.
+#   aiobotocore  — no object storage.
+#   httpx        — NOTHING in build steps 1-5 makes an outbound HTTP call.
+#                  ports/weather.py does not exist yet; it arrives with the first
+#                  forecast method, and then in worker.txt, not here. Adding it
+#                  early puts an unused dependency in the worker image and
+#                  invites the api-direction import mistake for no benefit.
+#                  (It IS present in testing.txt — fastapi's TestClient needs it.)
+#   workalendar,
+#   dateutil     — no business-day arithmetic.

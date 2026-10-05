@@ -1,0 +1,97 @@
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]
+# A HARD GATE. Any DeprecationWarning anywhere — including one emitted by
+# aiomqtt or paho-mqtt at import or connect time — fails the whole suite. That is
+# why both are pinned explicitly in requirements/base.txt rather than left to
+# transitive resolution, and why tests/test_broker_imports.py imports the adapter
+# inside the pytest process: so the interaction surfaces as a requirements-pin
+# problem at step 1 rather than as a mystery at step 3.
+filterwarnings = ["error::DeprecationWarning"]
+# Copied from notification-dispatch, NOT from administrative-document, which
+# omits it. Without it pytest-asyncio 0.24 emits its unset-default-loop-scope
+# PytestDeprecationWarning — which the line above then turns into an error.
+asyncio_default_fixture_loop_scope = "function"
+
+[tool.coverage.run]
+omit = ["scripts/*", "tests/*", "*/main.py"]
+
+[tool.coverage.report]
+show_missing = true
+
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[tool.ruff.lint]
+select = [
+    "E", "F", "W",
+    "I",
+    "B",       # ← bugbear
+    "S",       # ← bandit (security)
+    "UP",
+    "N",
+    "C4",
+    "SIM",
+    "RUF",
+    "ASYNC",
+    "PIE",
+    "PT",
+]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**" = ["S101", "S105", "S106", "S311", "N806", "PT018"]
+# scripts/simulate_device.py is a DEVELOPER-FACING DELIVERABLE that fabricates
+# meter traffic, and `ruff check .` lints it with bandit rules on — the sibling
+# annexes only ever exempt `tests/**`, so this is easy to discover the hard way.
+#
+#   S311 — the PV day curve and the jitter are simulation, not cryptography.
+#          (Token generation, which IS cryptography, lives in api/ and uses
+#          `secrets`; nothing in scripts/ may generate a credential.)
+#   S106 — the CLI takes --password, so a hardcoded default in the argparse
+#          signature reads as a hardcoded credential.
+#   S104 — binding 0.0.0.0 in a local harness.
+"scripts/simulate_device.py" = ["S311", "S106", "S104"]
+
+[tool.mypy]
+python_version = "3.12"
+plugins = ["pydantic.mypy"]
+strict = false
+warn_return_any = true
+warn_unused_ignores = true
+exclude = ["^venv/", "^\\.venv/"]
+
+[[tool.mypy.overrides]]
+# CI runs `mypy .` over EVERYTHING — tests/, scripts/, core/, main.py — not the
+# narrower `mypy api ports worker`. Anything here without type stubs needs a line.
+module = [
+    "aiomqtt.*",
+    "paho.*",
+    "factory.*",
+    "asyncpg.*",
+    "segno.*",
+]
+ignore_missing_imports = true
+
+[tool.ruff.lint.flake8-bugbear]
+extend-immutable-calls = [
+    "fastapi.Body",
+    "fastapi.Depends",
+    "fastapi.Query",
+    "fastapi.Path",
+    "fastapi.Header",
+    "fastapi.Cookie",
+    "fastapi.File",
+    "fastapi.Form",
+    "fastapi.Security",
+    "fastapi.params.Body",
+    "fastapi.params.Depends",
+    "fastapi.params.Query",
+    "fastapi.params.Path",
+    "fastapi.params.Header",
+    "fastapi.params.Cookie",
+    "fastapi.params.File",
+    "fastapi.params.Form",
+    "fastapi.params.Security",
+]

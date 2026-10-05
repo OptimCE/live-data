@@ -1,0 +1,73 @@
+name: Test
+
+# The sibling annexes' test.yml, unchanged except for this comment block.
+#
+# ===========================================================================
+# THERE IS NO MOSQUITTO SERVICE CONTAINER HERE, AND THAT IS D-7 - A DECISION,
+# NOT AN OMISSION. Do not "fix" it by adding one.
+#
+# GitHub Actions creates `services:` containers BEFORE `actions/checkout` runs,
+# so a repo-tracked mosquitto.conf can never be their bind-mount source. This
+# broker needs one: `allow_anonymous false` plus the dynamic-security plugin is
+# the entire authentication model, and without the config file the container
+# self-generates a `democlient` and a plaintext password file.
+#
+# Not one of the SEVEN `tests/docker-compose.test.yml` files in the OptimCE
+# monorepo - live-data's own included - mounts anything. That is the shape of
+# the house, stated as an observation; whether each of the other six arrived
+# at it for this reason is not something this file can claim.
+#
+# So the broker adapter is tested against a fake transport (tests/
+# test_broker_adapter.py), and the half that needs a real broker lives in the
+# monorepo as `scripts/verify-live-ingest.sh` - end-to-end checks that a revoked
+# device is genuinely disconnected, that a retained status is genuinely cleared,
+# that a re-sent backlog genuinely overwrites. The house already draws this line
+# for NATS: the sibling services' tests/test_nats_resilience.py says outright
+# that the real behaviour "can only be verified end-to-end with a real broker".
+#
+# Postgres IS a service container, on 5433. tests/conftest.py's `test_db_ready`
+# fixture has an `if os.getenv("CI"):` branch that hard-codes localhost:5433 and
+# skips pytest-docker entirely - written for exactly this workflow. Locally,
+# pytest-docker starts tests/docker-compose.test.yml instead.
+# ===========================================================================
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:18
+        env:
+          POSTGRES_DB: test_db_be
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+        ports:
+          - 5433:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    env:
+      ENV: test
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: requirements/testing.txt
+
+      - run: pip install -r requirements/testing.txt
+
+      - run: pytest

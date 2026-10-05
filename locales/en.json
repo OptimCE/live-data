@@ -1,0 +1,44 @@
+{
+  "ERRORS": {
+    "INTERNAL": "Internal server error (code: 0)",
+    "AUTH": {
+      "UNAUTHORIZED": "Authentication required (code: 1)",
+      "FORBIDDEN": "Access denied (code: 2)",
+      "RATE_LIMITED": "Too many requests, please try again later (code: 3)",
+      "AUTHORIZATION_MISSING": "Missing authorization header (code: 4)"
+    },
+    "SUBSCRIPTION": {
+      "NOT_SUBSCRIBED": "You are not subscribed to this service (code: 1003)"
+    },
+    "LIVE": {
+      "GET_DEVICES": "Failed to retrieve the devices (code: 2400)",
+      "GET_DEVICE": "Failed to retrieve the device (code: 2401)",
+      "DEVICE_NOT_FOUND": "This device does not exist (code: 2402)",
+      "CREATE_DEVICE": "Failed to create the device (code: 2403)",
+      "EAN_NOT_FOUND": "No active meter was found for this EAN in your community (code: 2404)",
+      "DUPLICATE_EAN": "A device already exists for this meter (code: 2405)",
+      "REVOKE_DEVICE": "Failed to revoke the device (code: 2406)",
+      "DEVICE_ALREADY_REVOKED": "This device has already been revoked (code: 2407)",
+      "ISSUE_TOKEN": "Failed to issue an enrolment token (code: 2410)",
+      "TOKEN_NOT_FOUND": "This enrolment code is not valid. Ask for a new one (code: 2411)",
+      "ENROLMENT_IN_PROGRESS": "An enrolment is already in progress for this code. Try again shortly (code: 2412)",
+      "ENROLMENT_FAILED": "Enrolment failed (code: 2413)",
+      "BROKER_UNAVAILABLE": "The data broker is unavailable. Try again shortly (code: 2420)",
+      "BROKER_COMMAND_FAILED": "The data broker refused the operation (code: 2421)",
+      "COMMUNITY_NOT_SUBSCRIBED": "This community is not subscribed to the live data service (code: 2430)",
+      "GET_SETTINGS": "Failed to retrieve the live data settings (code: 2431)",
+      "GET_SUMMARY": "Failed to retrieve the live summary (code: 2432)",
+      "GET_SERIES": "Failed to retrieve the live series (code: 2433)",
+      "UPDATE_SETTINGS": "Failed to update the live data settings (code: 2434)",
+      "GET_FORECAST": "Failed to retrieve the production forecast (code: 2435)",
+      "GET_OPS_HEALTH": "Failed to retrieve the fleet status (code: 2436)",
+      "AGGREGATE_NOT_VISIBLE": "Your community administrator has not made this data available to members (code: 2440)",
+      "WINDOW_NOT_SNAPPED": "The start and end of the period must fall on the requested resolution (code: 2441)",
+      "WINDOW_TOO_LARGE": "The requested period is too long (code: 2442)",
+      "UNKNOWN_RESOLUTION": "Unknown resolution (code: 2443)",
+      "GET_DIAGNOSTICS": "Failed to retrieve the device diagnostics (code: 2444)",
+      "GET_OPERATIONS": "Failed to retrieve the sharing operations (code: 2445)",
+      "OPERATION_NOT_FOUND": "Sharing operation not found (code: 2446)"
+    }
+  }
+}

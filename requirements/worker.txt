@@ -1,0 +1,11 @@
+-r base.txt
+
+# The worker needs nothing the API does not. In particular it must NOT reach the
+# HTTP stack: Dockerfile.worker installs THIS file, so fastapi, uvicorn and
+# starlette are absent from the worker image, and an `api.*` import that pulls
+# them passes pytest, ruff and mypy locally — where .venv has everything — and
+# then crash-loops the container. That shipped once in a sibling service and
+# crash-looped 62 times.
+#
+# tests/test_worker_import_graph.py pins both the import graph and
+# Dockerfile.worker's COPY list against this.

@@ -1,0 +1,93 @@
+# The API image that ships. `Dockerfile` is the DEV one and is not a candidate:
+# it installs requirements/testing.txt, runs as root, and its CMD is
+# `uvicorn --reload`.
+#
+# Instruction-for-instruction it is administrative-document's
+# Dockerfile.production: strip the comments and `diff -w` shows ONE added line,
+# `COPY forecasting/` (a package that service does not have). That is on
+# purpose - there was nothing else to improve - so what follows is not a list of
+# divergences but a record of which inherited choices turn out to be
+# LOAD-BEARING here for reasons the siblings do not share.
+
+# ---------- stage 1: build ----------
+FROM python:3.12-slim AS builder
+
+WORKDIR /build
+COPY requirements/base.txt requirements/base.txt
+COPY requirements/api.txt  requirements/api.txt
+
+RUN pip install --no-cache-dir --prefix=/install -r requirements/api.txt
+
+# ---------- stage 2: runtime ----------
+FROM python:3.12-slim
+
+# Security: non-root user
+RUN groupadd -r app && useradd -r -g app -d /app -s /sbin/nologin app
+
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1
+
+WORKDIR /app
+
+# Only the installed packages, never the builder's pip cache or sources.
+COPY --from=builder /install /usr/local
+
+# `domain/` is the frozen wire models, the rejection taxonomy and the token
+# alphabet; `ports/` holds the dynamic-security broker adapter and the read-only
+# CRM port. Both are imported by the API process.
+#
+# `forecasting/` is imported by the API process too: api/live/read_service.py
+# reads the method registry for `GET /forecast` and `GET /forecast/methods`.
+# Until 2026-10-01 it was missing here, so this image died at import with
+# ModuleNotFoundError while the dev image (`COPY . .`) ran fine.
+# tests/test_api_import_graph.py now compares what `import main` loads against
+# this list.
+#
+# NO `COPY worker/`. administrative-document, billing and news-board make the
+# same choice; simulation-key and allocation-key-generation do ship worker/ in
+# their API image. All five, however, list `worker/**` in build.yml's paths
+# filter, so two of them rebuild this image on a change it cannot contain.
+# Ours does not list it, because nothing under main.py, api/ or core/ imports
+# `worker` - the worker is a separate process with a separate image and no
+# shared entry point.
+COPY main.py .
+COPY core/    core/
+COPY api/     api/
+COPY domain/  domain/
+COPY ports/   ports/
+COPY shared/  shared/
+COPY forecasting/ forecasting/
+COPY scripts/ scripts/
+COPY locales/ locales/
+
+RUN chown -R app:app /app
+USER app
+
+EXPOSE 8000
+
+# No HEALTHCHECK here, matching the siblings: the orchestrator defines it, and
+# `/health/readiness` is the probe (it reads `schema_version` and counts
+# `measurement_default` - `SELECT 1` is green over an empty database).
+#
+# ===========================================================================
+# `--workers 1` IS LOAD-BEARING HERE. The siblings ship the identical flag, so
+# this is not a divergence - but for them it is a default, and for this service
+# it is a constraint. Do not raise it, and do not run two replicas of this
+# image against one broker.
+#
+# The API holds a long-lived admin connection to Mosquitto's dynamic-security
+# control topic, and `MQTT_ADMIN_CLIENT_ID` is the fixed literal
+# "live-data-admin" (core/config.py). MQTT evicts an existing session when a
+# second client connects with the same identifier, so two API workers would kick
+# each other off the broker continuously - for ever, both reporting healthy,
+# because `/health/readiness` deliberately does not gate on the broker (a broker
+# that is down must be a 503 on enrolment, not a dead admin surface).
+#
+# The symptom would be enrolments failing intermittently with a broker timeout
+# and nothing anywhere saying why. Dockerfile.worker carries the same warning
+# for the same reason, and core/config.py:88-91 states it at the source.
+#
+# To scale the API, give each replica its own MQTT_ADMIN_CLIENT_ID - that is a
+# deliberate act, not a `--workers` bump.
+# ===========================================================================
+CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000", "--workers", "1", "--limit-max-requests", "2097152"]

@@ -1,0 +1,44 @@
+{
+  "ERRORS": {
+    "INTERNAL": "Erreur interne du serveur (code: 0)",
+    "AUTH": {
+      "UNAUTHORIZED": "Authentification requise (code: 1)",
+      "FORBIDDEN": "Accès refusé (code: 2)",
+      "RATE_LIMITED": "Trop de requêtes, veuillez réessayer plus tard (code: 3)",
+      "AUTHORIZATION_MISSING": "En-tête d'autorisation manquant (code: 4)"
+    },
+    "SUBSCRIPTION": {
+      "NOT_SUBSCRIBED": "Vous n'êtes pas abonné à ce service (code: 1003)"
+    },
+    "LIVE": {
+      "GET_DEVICES": "Échec de la récupération des appareils (code: 2400)",
+      "GET_DEVICE": "Échec de la récupération de l'appareil (code: 2401)",
+      "DEVICE_NOT_FOUND": "Cet appareil n'existe pas (code: 2402)",
+      "CREATE_DEVICE": "Échec de la création de l'appareil (code: 2403)",
+      "EAN_NOT_FOUND": "Aucun compteur actif n'a été trouvé pour cet EAN dans votre communauté (code: 2404)",
+      "DUPLICATE_EAN": "Un appareil existe déjà pour ce compteur (code: 2405)",
+      "REVOKE_DEVICE": "Échec de la révocation de l'appareil (code: 2406)",
+      "DEVICE_ALREADY_REVOKED": "Cet appareil a déjà été révoqué (code: 2407)",
+      "ISSUE_TOKEN": "Échec de l'émission du code d'enrôlement (code: 2410)",
+      "TOKEN_NOT_FOUND": "Ce code d'enrôlement n'est pas valide. Demandez-en un nouveau (code: 2411)",
+      "ENROLMENT_IN_PROGRESS": "Un enrôlement est déjà en cours pour ce code. Réessayez dans un instant (code: 2412)",
+      "ENROLMENT_FAILED": "Échec de l'enrôlement (code: 2413)",
+      "BROKER_UNAVAILABLE": "Le courtier de données est indisponible. Réessayez dans un instant (code: 2420)",
+      "BROKER_COMMAND_FAILED": "Le courtier de données a refusé l'opération (code: 2421)",
+      "COMMUNITY_NOT_SUBSCRIBED": "Cette communauté n'est pas abonnée au service de données en temps réel (code: 2430)",
+      "GET_SETTINGS": "Échec de la récupération des paramètres de données en temps réel (code: 2431)",
+      "GET_SUMMARY": "Impossible de récupérer le résumé en direct (code: 2432)",
+      "GET_SERIES": "Impossible de récupérer la série en direct (code: 2433)",
+      "UPDATE_SETTINGS": "Impossible de mettre à jour les paramètres de données en direct (code: 2434)",
+      "GET_FORECAST": "Impossible de récupérer la prévision de production (code: 2435)",
+      "GET_OPS_HEALTH": "Impossible de récupérer l'état du parc d'appareils (code: 2436)",
+      "AGGREGATE_NOT_VISIBLE": "L'administrateur de votre communauté n'a pas rendu ces données accessibles aux membres (code: 2440)",
+      "WINDOW_NOT_SNAPPED": "Le début et la fin de la période doivent correspondre à la résolution demandée (code: 2441)",
+      "WINDOW_TOO_LARGE": "La période demandée est trop longue (code: 2442)",
+      "UNKNOWN_RESOLUTION": "Résolution inconnue (code: 2443)",
+      "GET_DIAGNOSTICS": "Impossible de récupérer le diagnostic de l'appareil (code: 2444)",
+      "GET_OPERATIONS": "Impossible de récupérer les opérations de partage (code: 2445)",
+      "OPERATION_NOT_FOUND": "Opération de partage introuvable (code: 2446)"
+    }
+  }
+}

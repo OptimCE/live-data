@@ -1,0 +1,44 @@
+{
+  "ERRORS": {
+    "INTERNAL": "Interne serverfout (code: 0)",
+    "AUTH": {
+      "UNAUTHORIZED": "Authenticatie vereist (code: 1)",
+      "FORBIDDEN": "Toegang geweigerd (code: 2)",
+      "RATE_LIMITED": "Te veel verzoeken, probeer het later opnieuw (code: 3)",
+      "AUTHORIZATION_MISSING": "Autorisatieheader ontbreekt (code: 4)"
+    },
+    "SUBSCRIPTION": {
+      "NOT_SUBSCRIBED": "U bent niet geabonneerd op deze dienst (code: 1003)"
+    },
+    "LIVE": {
+      "GET_DEVICES": "Ophalen van de apparaten mislukt (code: 2400)",
+      "GET_DEVICE": "Ophalen van het apparaat mislukt (code: 2401)",
+      "DEVICE_NOT_FOUND": "Dit apparaat bestaat niet (code: 2402)",
+      "CREATE_DEVICE": "Aanmaken van het apparaat mislukt (code: 2403)",
+      "EAN_NOT_FOUND": "Er is geen actieve meter gevonden voor deze EAN in uw gemeenschap (code: 2404)",
+      "DUPLICATE_EAN": "Er bestaat al een apparaat voor deze meter (code: 2405)",
+      "REVOKE_DEVICE": "Intrekken van het apparaat mislukt (code: 2406)",
+      "DEVICE_ALREADY_REVOKED": "Dit apparaat is al ingetrokken (code: 2407)",
+      "ISSUE_TOKEN": "Uitgeven van een aanmeldcode mislukt (code: 2410)",
+      "TOKEN_NOT_FOUND": "Deze aanmeldcode is niet geldig. Vraag een nieuwe aan (code: 2411)",
+      "ENROLMENT_IN_PROGRESS": "Er loopt al een aanmelding voor deze code. Probeer het zo dadelijk opnieuw (code: 2412)",
+      "ENROLMENT_FAILED": "Aanmelding mislukt (code: 2413)",
+      "BROKER_UNAVAILABLE": "De datamakelaar is niet beschikbaar. Probeer het zo dadelijk opnieuw (code: 2420)",
+      "BROKER_COMMAND_FAILED": "De datamakelaar heeft de bewerking geweigerd (code: 2421)",
+      "COMMUNITY_NOT_SUBSCRIBED": "Deze gemeenschap is niet geabonneerd op de live-datadienst (code: 2430)",
+      "GET_SETTINGS": "Ophalen van de live-data-instellingen mislukt (code: 2431)",
+      "GET_SUMMARY": "Kan het live-overzicht niet ophalen (code: 2432)",
+      "GET_SERIES": "Kan de live-reeks niet ophalen (code: 2433)",
+      "UPDATE_SETTINGS": "Kan de live-data-instellingen niet bijwerken (code: 2434)",
+      "GET_FORECAST": "Kan de productieprognose niet ophalen (code: 2435)",
+      "GET_OPS_HEALTH": "Kan de status van de apparaten niet ophalen (code: 2436)",
+      "AGGREGATE_NOT_VISIBLE": "De beheerder van uw gemeenschap heeft deze gegevens niet beschikbaar gesteld aan leden (code: 2440)",
+      "WINDOW_NOT_SNAPPED": "Het begin en het einde van de periode moeten op de gevraagde resolutie vallen (code: 2441)",
+      "WINDOW_TOO_LARGE": "De gevraagde periode is te lang (code: 2442)",
+      "UNKNOWN_RESOLUTION": "Onbekende resolutie (code: 2443)",
+      "GET_DIAGNOSTICS": "Kan de diagnose van het apparaat niet ophalen (code: 2444)",
+      "GET_OPERATIONS": "Het ophalen van de deelactiviteiten is mislukt (code: 2445)",
+      "OPERATION_NOT_FOUND": "Deelactiviteit niet gevonden (code: 2446)"
+    }
+  }
+}

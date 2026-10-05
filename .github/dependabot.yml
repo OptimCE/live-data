@@ -1,0 +1,126 @@
+---
+# Dependency updates for live-data.
+#
+# ===========================================================================
+# THIS IS A FIRST FOR THE HOUSE, NOT A COPY OF IT. Only two of the twelve
+# registered submodules carry a dependabot.yml - crm-backend and crm-frontend,
+# both Node - and the root uses Renovate, scoped to itself by
+# `RENOVATE_REPOSITORIES: ${{ github.repository }}`, which structurally cannot
+# reach a submodule. So all seven Python annexes currently have NO dependency
+# automation of any kind, and this file makes live-data the first.
+#
+# It earns that because of one line in pyproject.toml:
+#
+#     filterwarnings = ["error::DeprecationWarning"]
+#
+# Any bump that introduces a single DeprecationWarning fails the whole suite.
+# That is a feature - it has already caught one - but it means the 30 hand-typed
+# `==` pins in requirements/ rot silently with nothing offering to move them.
+#
+# DO NOT MERGE A PR FROM THIS UNTIL THE REPOSITORY IS FULLY WIRED. Every merge
+# pushes to main, and two workflows react badly to that on a half-wired repo:
+#
+#   notify_monorepo_update.yml  exits 1 when MONOREPO_TOKEN is unset - by
+#                               design, it is the divergence from the siblings'
+#                               silent curl - so main goes red on every merge.
+#   update-documentation.yml    guards on `github.actor != 'github-actions[bot]'`,
+#                               which does NOT exclude `dependabot[bot]`, so it
+#                               re-runs and dies at `configure-pages` until
+#                               GitHub Pages is switched on by hand.
+#
+# Land this in the same change that adds the remote, the gitlink, the
+# MONOREPO_TOKEN secret and Pages - not before.
+# ===========================================================================
+version: 2
+updates:
+  # ---- GitHub Actions -----------------------------------------------------
+  # Ten distinct actions across six workflows, and they have already drifted:
+  # actions/checkout is @v4 in four of them and @v6 in update-documentation.yml.
+  # Nothing else in this repository would ever notice.
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+
+  # ---- Python -------------------------------------------------------------
+  #
+  # ACCEPTANCE CHECK, because this entry's failure mode is SILENCE. There is no
+  # requirements file at the repository root and pyproject.toml declares no
+  # dependencies, so `directory: "/"` finds something only if Dependabot's pip
+  # fetcher walks down into `requirements/`. After the first scheduled run,
+  # open the Dependabot job log and confirm it lists all six files
+  # (base, api, worker, development, testing, all). If it lists none, change
+  # this to `directory: "/requirements"`. An entry that matches no manifest
+  # produces no PRs and no error - it simply does nothing, for ever.
+  #
+  # The files chain with `-r`: all -> testing -> development -> api -> base,
+  # with worker as a second leaf off base.
+  - package-ecosystem: "pip"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    groups:
+      # Twelve packages across two lockstep release lines (1.39.1 and 0.60b1).
+      # Within the 0.60b1 family the members pin each other with `==`, so a
+      # single-package PR there cannot resolve. Upstream ships both lines
+      # together; update them together.
+      opentelemetry:
+        patterns:
+          - "opentelemetry-*"
+    ignore:
+      # aiomqtt v3 is the only version exposing a manual `client.puback()`, and
+      # it is MQTTv5-ONLY. docs/live-data-protocol.md freezes devices at MQTT
+      # 3.1.1 - "Not MQTT 5 - the ESP32 firmwares must not need it" - so v3 is
+      # not an upgrade, it is a protocol violation. worker/ingest.py is built
+      # around 2.x acknowledging before the application sees the message.
+      #
+      # Note this also suppresses SECURITY advisories for aiomqtt 3.x. That is
+      # accepted: we cannot take them regardless.
+      #
+      # paho-mqtt needs no rule. aiomqtt 2.5.1 declares
+      # `Requires-Dist: paho-mqtt<3.0.0,>=2.1.0`, so pip cannot resolve paho 3.x
+      # while aiomqtt is capped - the constraint is already expressed upstream.
+      - dependency-name: "aiomqtt"
+        update-types:
+          - "version-update:semver-major"
+
+  # ---- Docker -------------------------------------------------------------
+  #
+  # Near-inert until the base images are pinned: all five `FROM` lines across
+  # Dockerfile, Dockerfile.worker and Dockerfile.production are a bare
+  # `python:3.12-slim`, so there is no version for Dependabot to advance.
+  # Pinning them to digests is the follow-up that turns this entry into real
+  # CVE coverage.
+  - package-ecosystem: "docker"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    ignore:
+      # 3.13 would be a silent regression, not an upgrade: pyproject sets
+      # `python_version = "3.12"` for mypy and `target-version = "py312"` for
+      # ruff, and the plain `Dockerfile` is in no workflow's paths filter, so
+      # CI never builds it at all. Patch releases are welcome; the minor is a
+      # decision, and it belongs with those two settings. Suppresses security
+      # updates across a minor too - the trade is deliberate.
+      - dependency-name: "python"
+        update-types:
+          - "version-update:semver-major"
+          - "version-update:semver-minor"
+#
+# NOT configured, each for a reason:
+#
+#   npm, devcontainers  the two Node siblings carry these; live-data has no
+#                       package.json and no .devcontainer.
+#   a /tests entry      `postgres:18` is pinned TWICE - in .github/workflows/
+#                       test.yml's `services:` block, which is what CI actually
+#                       uses (tests/conftest.py takes an `if os.getenv("CI")`
+#                       branch and skips pytest-docker), and in
+#                       tests/docker-compose.test.yml, which CI never reads.
+#                       A /tests entry would bump the copy CI ignores and leave
+#                       the copy CI uses behind, so the pair would drift. Both
+#                       stay manual, and they must move together.
+#   open-pull-requests-limit
+#                       left at the default 5. With 30 direct pins plus ten
+#                       actions the first run will saturate it; the OTel group
+#                       takes twelve candidates to one, and the right moment to
+#                       tune this is against a real job log, not a guess.

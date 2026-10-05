@@ -1,0 +1,70 @@
+# Git
+.git
+.gitignore
+.gitattributes
+.github
+
+# Python bytecode & caches
+#
+# `**/` IS REQUIRED and its absence is not cosmetic: Docker anchors these
+# patterns at the context root and `*` does not cross `/`, so a bare
+# `__pycache__` excludes only a TOP-LEVEL one. Measured on the image this file
+# governs: 15 __pycache__ directories and 63 .pyc files shipped, including
+# bytecode for scripts the API never runs.
+#
+# Two consequences. The image stops being a function of the git tree - it
+# carries whatever the developer last executed - and any local pytest run
+# changes the COPY layer, busting the build cache with no source change.
+#
+# The sibling annexes ship the byte-identical file and have the same bug.
+**/__pycache__
+**/*.pyc
+**/*.pyo
+**/*.pyd
+*.egg-info
+.pytest_cache
+.mypy_cache
+.ruff_cache
+.pyre
+.pytype
+cython_debug
+
+# Local env files (compose injects vars)
+.env
+.env.local
+.env.production
+.env.staging
+.env.test
+
+# Virtual environments
+.venv
+venv
+env
+ENV
+
+# Coverage & test artifacts
+htmlcov
+.coverage
+.coverage.*
+coverage.xml
+.codspeed
+
+# IDE / tooling
+.idea
+.vscode
+.claude
+
+# Build artifacts
+build/
+dist/
+*.egg
+
+# OS
+.DS_Store
+*~
+.cache
+
+# Docker
+Dockerfile*
+.dockerignore
+docker-compose*.yml

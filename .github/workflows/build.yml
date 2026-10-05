@@ -1,0 +1,103 @@
+name: Docker (API)
+
+# Builds Dockerfile.production - NOT `Dockerfile`, which is the dev image
+# (installs requirements/testing.txt, runs as root, CMD is `uvicorn --reload`).
+#
+# The paths list below is this repository's own, and it deliberately OMITS
+# `worker/**`, which every sibling annexe includes in its API build. Ours is
+# right: Dockerfile.production has no `COPY worker/`, because nothing under
+# main.py, api/ or core/ imports it. A path that cannot change the image has no
+# business triggering a rebuild of it.
+#
+# ONE THING THAT READS BACKWARDS UNTIL YOU CHECK IT. GitHub's workflow-syntax
+# reference says, verbatim: "Path filters are not evaluated for pushes of
+# tags." NOT evaluated means NOT restricting - so pushing `v1.2.3` runs this
+# job unconditionally, whatever the paths list says and whatever changed.
+#
+# That is the behaviour you want from a release tag, and it is worth knowing
+# rather than discovering: a tag rebuilds and republishes even when nothing
+# under these paths moved, and metadata-action will stamp it `:1.2.3` and
+# `:latest`. Inherited from the five siblings, which all behave this way.
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    tags: ['v*.*.*']
+    paths:
+      - 'Dockerfile.production'
+      - 'main.py'
+      - 'api/**'
+      - 'core/**'
+      - 'domain/**'
+      - 'ports/**'
+      - 'shared/**'
+      - 'forecasting/**'
+      - 'locales/**'
+      - 'scripts/**'
+      - 'requirements/base.txt'
+      - 'requirements/api.txt'
+      - '.dockerignore'
+      - '.github/workflows/build.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'Dockerfile.production'
+      - 'main.py'
+      - 'api/**'
+      - 'core/**'
+      - 'domain/**'
+      - 'ports/**'
+      - 'shared/**'
+      - 'forecasting/**'
+      - 'locales/**'
+      - 'scripts/**'
+      - 'requirements/base.txt'
+      - 'requirements/api.txt'
+      - '.dockerignore'
+      - '.github/workflows/build.yml'
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log into registry ${{ env.REGISTRY }}
+        if: github.event_name != 'pull_request'
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract Docker metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          flavor: |
+            suffix=-prod,onlatest=true
+
+      - name: Build and push (prod)
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: Dockerfile.production
+          push: ${{ github.event_name != 'pull_request' }}
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha,scope=prod
+          cache-to: type=gha,mode=max,scope=prod
