@@ -1,6 +1,6 @@
 # Core framework
 sqlalchemy[asyncio]==2.0.36
-asyncpg==0.30.0
+asyncpg==0.32.0
 
 # Pydantic
 pydantic==2.10.3
