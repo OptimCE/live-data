@@ -1,7 +1,7 @@
 -r base.txt
 
 # HTTP framework
-fastapi==0.115.6
+fastapi==0.143.0
 uvicorn[standard]==0.32.1
 
 # Server-side QR rendering for the enrolment token (plan §8.3). segno is pure
