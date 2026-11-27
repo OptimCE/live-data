@@ -4,7 +4,7 @@
 
 # OptimCE — Live-gegevens
 
-[![Website](https://img.shields.io/badge/Website-optimce.be-2e7d32.svg)](https://www.optimce.be)
+[![Website](https://img.shields.io/badge/Website-optimce.be-2e7d32.svg)](https://www.optimce.be/nl/)
 [![Licentie](https://img.shields.io/badge/Licentie-Apache%202.0-blue.svg)](../LICENSE)
 [![en](https://img.shields.io/badge/lang-en-lightgrey.svg)](../README.md)
 [![fr](https://img.shields.io/badge/lang-fr-lightgrey.svg)](README.fr.md)
