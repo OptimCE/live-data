@@ -42,14 +42,14 @@ opentelemetry-util-http==0.60b1
 
 # DELIBERATELY ABSENT, each for a reason worth keeping:
 #
-#   nats-py      — this service has no NATS (plan §4). Nothing publishes and
-#                  nothing consumes; wiring it would make /health/readiness fail
-#                  closed on a broker the service does not use. The subject space
-#                  `optimce.live.>` is reserved in shared/const.py.
+#   nats-py      — not in BASE: the worker and the scheduler have no NATS (plan §4).
+#                  The API's only use of it is the data export, in api.txt, and
+#                  /health/readiness never gates on it. The subject space
+#                  `optimce.live.>` stays reserved in shared/const.py.
 #   redis        — no realtime hints in phase 1. An envelope is a hint, never
 #                  data, and at 15-minute granularity a push can only say
 #                  "refetch" — which the client already does on its poll.
-#   aiobotocore  — no object storage.
+#   aiobotocore  — no object storage, except the data export's parts (api.txt).
 #   httpx        — NOTHING in build steps 1-5 makes an outbound HTTP call.
 #                  ports/weather.py does not exist yet; it arrives with the first
 #                  forecast method, and then in worker.txt, not here. Adding it

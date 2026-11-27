@@ -14,3 +14,10 @@ uvicorn[standard]==0.32.1
 # leaf, which is exactly why a worker-only dependency would ALSO need pinning in
 # testing.txt to be testable at all.
 segno==1.6.1
+
+# The data export (core/export, the monorepo's contracts/export kit): the API answers its
+# part of a user's or a community's export. The API's ONLY use of NATS and of object
+# storage, so all three stay out of base.txt and the worker image.
+nats-py==2.14.0
+aiobotocore==2.15.2
+jsonschema==4.23.0

@@ -14,9 +14,10 @@ without a broker or a second database.
                                   ``httpx`` arrives with it (see requirements/base.txt).
 - ``providers``                 — which adapter backs each port at runtime.
 
-There is no ``events`` port: this service has no NATS. Nothing publishes and
-nothing consumes, and the subject space ``optimce.live.>`` is merely reserved in
-``shared/const.py``. The docstring here once advertised one - along with a
+There is no ``events`` port: nothing here publishes, and the subject space
+``optimce.live.>`` is merely reserved in ``shared/const.py``. The data export's
+consumer (``api/data_export.py``) is the only NATS client, in the API. The
+docstring here once advertised an events port - along with a
 ``crm_core_sqlalchemy`` module that never existed - because this file arrived as
 a copy of a sibling annexe's.
 """
