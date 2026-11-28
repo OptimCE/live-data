@@ -9,9 +9,11 @@
 -- crm-backend/src/modules/**/domain/*.models.ts rather than guessed: getting one
 -- wrong produces a suite that passes against a fiction.
 --
--- Deliberately ABSENT: `notification`, `outbound_message`, `community_user`.
--- live-data produces no notifications in phase 1, so `live_data_svc` has no
--- INSERT grant on them and nothing here should be able to pretend otherwise.
+-- Deliberately ABSENT: `notification`, `outbound_message`. live-data produces no
+-- notifications in phase 1, so `live_data_svc` has no INSERT grant on them and
+-- nothing here should be able to pretend otherwise. `community_user` is here for
+-- the data-export kit only (core/export/requester.py): a community export is an
+-- ADMIN's, re-checked in the CRM.
 
 -- ---- community -------------------------------------------------------------
 -- Mirrors core/database/models.py::Community.
@@ -185,6 +187,15 @@ CREATE TABLE IF NOT EXISTS user_member_link (
 );
 CREATE INDEX IF NOT EXISTS idx_user_member_link_member ON user_member_link (id_member);
 CREATE INDEX IF NOT EXISTS idx_user_member_link_user ON user_member_link (id_user);
+
+-- ---- community_user ---------------------------------------------------------
+-- The requester's role in a community, read by the data-export kit only.
+CREATE TABLE IF NOT EXISTS community_user (
+    id_community INTEGER REFERENCES community (id) ON DELETE CASCADE,
+    id_user      INTEGER REFERENCES app_user (id) ON DELETE CASCADE,
+    role         VARCHAR(50) NOT NULL,
+    PRIMARY KEY (id_community, id_user)
+);
 
 -- ---- audit_log --------------------------------------------------------------
 -- The one CRM table live-data WRITES. Mirrors core/database/models.py.

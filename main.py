@@ -1,3 +1,4 @@
+import asyncio
 import logging
 from contextlib import asynccontextmanager
 
@@ -5,6 +6,7 @@ from fastapi import Depends, FastAPI
 from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
 from starlette.middleware.cors import CORSMiddleware
 
+from api.data_export import start_export_consumer, stop_export_consumer
 from api.health.routes import health_router
 from api.live.routes import live_routes
 from api.live_public.routes import PUBLIC_TAG, live_public_routes
@@ -28,10 +30,11 @@ logger = logging.getLogger(__name__)
 async def lifespan(app: FastAPI):
     """Startup and shutdown.
 
-    NO NATS (plan 4). Nothing publishes and nothing consumes, and wiring it would
-    make /health/readiness fail closed on a broker this service does not use. The
-    subject space `optimce.live.>` is reserved in shared/const.py; do not add
-    core/queue/ without a producer.
+    NO NATS for telemetry (plan 4): nothing here publishes. The subject space
+    `optimce.live.>` is reserved in shared/const.py; do not add core/queue/ without
+    a producer. The one NATS client is the data export's consumer, started below:
+    it connects in the background and retries, so a broker that is down never
+    stops the API, and /health/readiness does not gate on it.
 
     NO REALTIME either, so there is no `log_realtime_state(...)` line here. Its
     absence is meaningful in the sibling services - it means the image predates
@@ -51,9 +54,14 @@ async def lifespan(app: FastAPI):
     broker = MqttDeviceBroker()
     await broker.start()
     set_device_broker(broker)
+    # The data export's live-data part (one at a time); disabled, and logged, without
+    # NATS_URL or its EXPORT_STORAGE_* account.
+    export_stop = asyncio.Event()
+    export_task = start_export_consumer(export_stop)
     try:
         yield
     finally:
+        await stop_export_consumer(export_task, export_stop)
         set_device_broker(None)
         await broker.stop()
 

@@ -190,11 +190,12 @@ ROLLUP_WINDOW_HOURS: Final[int] = 48
 NO_SHARING_OPERATION: Final[int] = 0
 
 # ---- NATS ---------------------------------------------------------------------
-# There is none, deliberately (plan 4). Nothing publishes and nothing consumes, and
-# wiring it would make /health/readiness fail closed on a broker this service does
-# not use. The subject space `optimce.live.>` is RESERVED here so that a later
-# phase does not have to negotiate for it, and so that nobody reads the absence of
-# a stream as an oversight. Do not add core/queue/ without a producer.
+# None for telemetry, deliberately (plan 4): nothing here publishes an event. The
+# one consumer is the data export's (api/data_export.py, the monorepo's
+# contracts/export), in the API only: it connects in the background and
+# /health/readiness never gates on it. The subject space `optimce.live.>` is
+# RESERVED here so that a later phase does not have to negotiate for it. Do not add
+# core/queue/ without a producer.
 RESERVED_NATS_SUBJECT_PREFIX: Final[str] = "optimce.live."
 
 # ---- Request limits -----------------------------------------------------------

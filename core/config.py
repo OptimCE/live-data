@@ -56,6 +56,13 @@ class Settings(BaseSettings):
     LOCAL_DB_POOL_TIMEOUT: int = 30  # seconds - wait for available connection
     LOCAL_DB_SSL: bool = False  # enable SSL/TLS for database connection
 
+    # ---- The data export (the monorepo's contracts/export) ----
+    # The API's ONLY use of NATS: it answers its part of a user's or a community's
+    # export (api/data_export.py). Empty = the export is off, logged, and the API
+    # serves on. The connection is made in the background and retried, and
+    # /health/readiness never gates on it.
+    NATS_URL: str = ""
+
     # ---- MQTT broker: the control connection ----
     # Where the API and the worker DIAL the broker. This is an address on the
     # compose `backend` network and it is NEVER handed to a device.

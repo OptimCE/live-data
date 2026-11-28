@@ -70,6 +70,10 @@ ABSENT_FROM_THE_WORKER_IMAGE = [
     "jose",
     "auth0",
     "segno",  # api.txt only - the QR renderer has no business in the worker
+    # api.txt only - the data export is answered by the API process
+    "jsonschema",
+    "nats",
+    "aiobotocore",
 ]
 
 _PROBE = """
